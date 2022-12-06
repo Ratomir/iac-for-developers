@@ -1,0 +1,19 @@
+service:
+  name: schedule
+  projectName: sin22v3
+  env: dev
+
+image:
+  repository: crsin22v3dev.azurecr.io/schedule
+
+serviceAccount:
+  clientId: 825bae95-8c99-44c9-83b4-183bbe07e9c2
+
+secrets:
+  identity: 9a83055e-4462-4802-a784-2335327fccab
+
+pod:
+  env:
+    useServiceDatabase: false
+    useStorageBlob: false
+    userStorageQueue: true

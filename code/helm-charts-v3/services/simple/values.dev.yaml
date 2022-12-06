@@ -1,0 +1,25 @@
+service:
+  name: simple
+  projectName: sin22v3
+  env: dev
+
+image:
+  repository: crsin22v3dev.azurecr.io/simple
+
+serviceAccount:
+  clientId: bac30dd7-2050-407d-b068-47680050c680
+
+secrets:
+  identity: 9a83055e-4462-4802-a784-2335327fccab
+
+pod:
+  env:
+    useServiceDatabase: false
+    useStorageBlob: true
+    userStorageQueue: false
+
+livenessProbe:
+  enabled: false
+
+readinessProbe:
+  enabled: false

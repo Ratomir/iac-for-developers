@@ -1,0 +1,218 @@
+{{- $tag := .Chart.AppVersion -}}
+{{- if ((.Values.image).tag) }}
+{{- $tag = .Values.image.tag }}
+{{- end }}
+
+{{- $autoscalingEnabled := true -}}
+{{- if eq (.Values.autoscaling).enabled false -}}
+{{- $autoscalingEnabled = .Values.autoscaling.enabled -}}
+{{- end -}}
+
+{{- $clientId := .Values.serviceAccount.clientId -}}
+
+{{- $serviceNameTitle := title (.Values.service.name) }}
+
+# readinessProbe
+{{- $readinessEnabled := true -}}
+{{- if eq ((.Values.readinessProbe).enabled) false }}
+{{- $readinessEnabled = false }}
+{{- end }}
+
+{{- $readinessHttpGetPath := "/hc" -}}
+{{- if (((.Values.readinessProbe).httpGet).path) }}
+{{- $readinessHttpGetPath = .Values.readinessProbe.httpGet.path }}
+{{- end }}
+
+{{- $readinessHttpGetPort := 80 -}}
+{{- if (((.Values.readinessProbe).httpGet).port) }}
+{{- $readinessHttpGetPort = .Values.readinessProbe.httpGet.port }}
+{{- end }}
+
+{{- $readinessInitialDelaySeconds := 5 -}}
+{{- if ((.Values.readinessProbe).initialDelaySeconds) }}
+{{- $readinessInitialDelaySeconds = .Values.readinessProbe.initialDelaySeconds }}
+{{- end }}
+
+{{- $readinessPeriodSeconds := 5 -}}
+{{- if ((.Values.readinessProbe).periodSeconds) }}
+{{- $readinessPeriodSeconds = .Values.readinessProbe.periodSeconds }}
+{{- end }}
+# readinessProbe end
+
+# livenessProbe
+{{- $livenessEnabled := true -}}
+{{- if  eq ((.Values.livenessProbe).enabled) false  }}
+{{- $livenessEnabled = false }}
+{{- end }}
+
+{{- $livenessHttpGetPath := "/liveness" -}}
+{{- if (((.Values.livenessProbe).httpGet).path) }}
+{{- $livenessHttpGetPath = .Values.livenessProbe.httpGet.path }}
+{{- end }}
+
+{{- $livenessHttpGetPort := 80 -}}
+{{- if (((.Values.livenessProbe).httpGet).port) }}
+{{- $livenessHttpGetPort = .Values.livenessProbe.httpGet.port }}
+{{- end }}
+
+{{- $livenessInitialDelaySeconds := 1 -}}
+{{- if ((.Values.livenessProbe).initialDelaySeconds) }}
+{{- $livenessInitialDelaySeconds = .Values.livenessProbe.initialDelaySeconds }}
+{{- end }}
+
+{{- $livenessFailureThreshold := 3 -}}
+{{- if ((.Values.livenessProbe).failureThreshold) }}
+{{- $livenessFailureThreshold = .Values.livenessProbe.failureThreshold }}
+{{- end }}
+
+{{- $livenessPeriodSeconds := 120 -}}
+{{- if ((.Values.livenessProbe).periodSeconds) }}
+{{- $livenessPeriodSeconds = .Values.livenessProbe.periodSeconds }}
+{{- end }}
+
+{{- $livenessSuccessThreshold := 1 -}}
+{{- if ((.Values.livenessProbe).successThreshold) }}
+{{- $livenessSuccessThreshold = .Values.livenessProbe.successThreshold }}
+{{- end }}
+
+{{- $livenessTimeoutSeconds := 1 -}}
+{{- if ((.Values.livenessProbe).timeoutSeconds) }}
+{{- $livenessTimeoutSeconds = .Values.livenessProbe.timeoutSeconds }}
+{{- end }}
+# livenessProbe end
+
+{{- $secretsName :=  printf "kv-%s-%s" .Values.service.name .Values.service.projectName -}}
+{{- if ((.Values.secrets).name) }}
+{{- $secretsName = .Values.secrets.name }}
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mainsinergija22.fullname" . }}
+  labels:
+    {{- include "mainsinergija22.labels" . | nindent 4 }}
+spec:
+  {{- if not $autoscalingEnabled }}
+  replicas: {{ .Values.replicaCount | default 1 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "mainsinergija22.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "mainsinergija22.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "mainsinergija22.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: "Always"
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          {{- with .Values.pod.env }}
+          env:
+            - name: "ASPNETCORE_ENVIRONMENT"
+              value: "Production"
+            - name: clientId
+              value: {{ $clientId }}
+            {{- if .useServiceDatabase -}}
+            {{ indent 14 ""}}
+            - name: "ConnectionStrings__{{ $serviceNameTitle }}Db"
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secretsName }}
+                  key: "ConnectionStrings--{{ $serviceNameTitle }}Db"
+            {{- end }}
+
+            {{- if .useStorageBlob -}}
+            {{ indent 14 ""}}
+            - name: ConnectionStrings__StorageAccountBlob
+              valueFrom:
+                secretKeyRef:
+                  name:  {{ $secretsName }}
+                  key: "ConnectionStrings--StorageAccount--Blob"
+            {{- end }}
+
+            {{- if .userStorageQueue -}}
+            {{ indent 14 ""}}
+            - name: ConnectionStrings__StorageAccountQueue
+              valueFrom:
+                secretKeyRef:
+                  name:  {{ $secretsName }}
+                  key: "ConnectionStrings--StorageAccount--Queue"
+            {{- end }}
+
+            {{- if .customValues -}}
+            {{- range .customValues }}
+            - name: {{ .name }}
+              {{- if .value -}}
+              {{ indent 14 ""}}
+              value: {{ .value | quote }}
+              {{- end }}
+              {{- with .valueFrom -}}
+              {{ indent 14 ""}}
+              valueFrom: {{ toYaml . | nindent 16 }}
+              {{- end }}
+            {{- end -}}
+            {{- end }}
+
+          {{- end }}
+
+          {{- if $readinessEnabled }}
+          readinessProbe:
+            httpGet:
+              path: {{ $readinessHttpGetPath }}
+              port: {{ $readinessHttpGetPort  }}
+            initialDelaySeconds: {{ $readinessInitialDelaySeconds }}
+            periodSeconds: {{ $readinessPeriodSeconds  }}
+          {{- end }}
+
+          {{- if $livenessEnabled }}
+          livenessProbe:
+            httpGet:
+              path: {{ $livenessHttpGetPath }}
+              port: {{ $livenessHttpGetPort  }}
+            initialDelaySeconds: {{ $livenessInitialDelaySeconds }}
+            failureThreshold: {{ $livenessFailureThreshold }}
+            periodSeconds: {{ $livenessPeriodSeconds  }}
+            successThreshold: {{ $livenessSuccessThreshold }}
+            timeoutSeconds: {{ $livenessTimeoutSeconds }}
+          {{- end }}
+          
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+              - name: "secrets-{{ .Values.service.name }}-inline"
+                mountPath: "/mnt/secrets-store"
+                readOnly: true
+
+      volumes:
+        - name: "secrets-{{ .Values.service.name }}-inline"
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ $secretsName }}
+      nodeSelector:
+          kubernetes.io/os: linux
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

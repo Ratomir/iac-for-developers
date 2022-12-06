@@ -1,0 +1,19 @@
+service:
+  name: payment
+  projectName: sin22v3
+  env: dev
+
+image:
+  repository: crsin22v3dev.azurecr.io/payment
+
+serviceAccount:
+  clientId: 3f5d272e-7bd6-48a7-965a-ba8cdf6dac6b
+
+secrets:
+  identity: 9a83055e-4462-4802-a784-2335327fccab
+
+pod:
+  env:
+    useServiceDatabase: true
+    useStorageBlob: true
+    userStorageQueue: true
