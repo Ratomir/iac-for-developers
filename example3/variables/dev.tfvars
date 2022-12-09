@@ -51,13 +51,13 @@ sinergija22services = [
       queue = true
     }
     sql_database = null
+  },
+  {
+    name = "simple"
+    useStorage = {
+      blob  = true
+      queue = false
+    }
+    sql_database = null
   }
-  # , {
-  #   name = "simple"
-  #   useStorage = {
-  #     blob  = true
-  #     queue = false
-  #   }
-  #   sql_database = null
-  # }
 ]

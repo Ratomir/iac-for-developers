@@ -24,8 +24,8 @@ template-payment:
 install-payment:
 	make install service=payment tag=$(tag)
 
-# template-simple:
-# 	make template service=simple tag=$(tag)
+template-simple:
+	make template service=simple tag=$(tag)
 
-# install-simple:
-# 	make install service=simple tag=$(tag)
+install-simple:
+	make install service=simple tag=$(tag)

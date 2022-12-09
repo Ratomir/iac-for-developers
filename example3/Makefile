@@ -25,6 +25,11 @@ apply-dev:
 	make init
 	terraform apply -var-file="variables/dev.tfvars"
 
+destroy-dev:
+	make init
+	make workspace-dev
+	terraform destroy -var-file="variables/dev.tfvars"
+
 workspace-qa:
 	make clean
 	terraform workspace select qa

@@ -7,7 +7,7 @@ image:
   repository: crsin22v3dev.azurecr.io/simple
 
 serviceAccount:
-  clientId: bac30dd7-2050-407d-b068-47680050c680
+  clientId: 903eb56c-b5ca-4835-b148-ff6dd9f96db5
 
 secrets:
   identity: 9a83055e-4462-4802-a784-2335327fccab
@@ -23,3 +23,5 @@ livenessProbe:
 
 readinessProbe:
   enabled: false
+
+
